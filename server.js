@@ -7,7 +7,7 @@ app.use(express.json());
 
 app.all('*', async (req, res) => {
     // 1. Grab the full target URL from the 'url' query parameter
-    let targetUrl = req.query.url;
+    let targetUrl = req.url;
 
     if (!targetUrl) {
         return res.status(400).json({ 
