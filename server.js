@@ -6,8 +6,25 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 app.all('*', async (req, res) => {
+    // 1. Grab the full target URL from the 'url' query parameter
+    let targetUrl = req.query.url;
 
-    const targetUrl = `${req.url}`;
+    if (!targetUrl) {
+        return res.status(400).json({ 
+            error: 'Missing URL', 
+            message: 'You must pass the full destination URL in the "url" query parameter.' 
+        });
+    }
+
+    // 2. Fix for nested query parameters
+    // If the destination URL has its own '?' parameters, Express might split them.
+    // This reconstruction guarantees the full URL string stays intact.
+    const rawUrl = req.url;
+    const urlMarker = 'url=';
+    if (rawUrl.includes(urlMarker)) {
+        const extracted = rawUrl.substring(rawUrl.indexOf(urlMarker) + urlMarker.length);
+        targetUrl = decodeURIComponent(extracted);
+    }
 
     try {
         // 3. Forward the request with clean browser headers
@@ -35,5 +52,5 @@ app.all('*', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Dynamic proxy running on port ${PORT}`);
+    console.log(`Universal proxy running on port ${PORT}`);
 });
