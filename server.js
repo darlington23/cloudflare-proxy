@@ -21,23 +21,29 @@ app.all('*', async (req, res) => {
     const targetUrl = `${cleanBase}${req.url}`;
 
     try {
-        // 3. Forward the request with clean browser headers
-        const response = await axios({
+        // 3. Conditionally build Axios config
+        const axiosConfig = {
             method: req.method,
             url: targetUrl,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
-                // Forward original auth token if Bubble/Flutterflow passes one
                 ...(req.headers.authorization && { 'Authorization': req.headers.authorization })
-            },
-            data: req.body
-        });
+            }
+        };
 
+        // ONLY attach data if it's a mutation request with an actual body
+        if (['POST', 'PUT', 'PATCH'].includes(req.method.toUpperCase()) && Object.keys(req.body).length > 0) {
+            axiosConfig.data = req.body;
+        }
+
+        const response = await axios(axiosConfig);
         res.status(response.status).json(response.data);
+
     } catch (error) {
         if (error.response) {
+            // Forward the exact error payload from the target API to see what it complained about
             res.status(error.response.status).send(error.response.data);
         } else {
             res.status(500).send({ error: 'Proxy error', message: error.message });
